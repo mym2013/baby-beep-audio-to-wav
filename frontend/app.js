@@ -11,6 +11,7 @@ const convertButton = document.getElementById("convertButton");
 const status = document.getElementById("status");
 
 let selectedFile = null;
+let converting = false;
 
 
 // --------------------------------------------------
@@ -80,21 +81,14 @@ dropZone.addEventListener("drop", (event) => {
 
 function handleFile(file) {
 
-  const extension = file.name
-    .split(".")
-    .pop()
-    .toLowerCase();
+  const extension = file.name.match(/\.[^.]+$/)?.[0].toLowerCase();
+  const acceptedTypes = fileInput.accept.split(",");
+  const isAudio = file.type.startsWith("audio/") ||
+    acceptedTypes.includes(extension);
 
-  const allowedExtensions = ["ogg", "opus","wav"];
-
-  if (!allowedExtensions.includes(extension)) {
-
+  if (!isAudio) {
     resetFile();
-
-    status.textContent =
-     
-      "Selecciona un archivo con extensión .ogg, .opus o .wav";
-
+    status.textContent = "Selecciona un archivo de audio.";
     return;
   }
 
@@ -105,7 +99,7 @@ function handleFile(file) {
 
   fileInfo.classList.remove("hidden");
 
-  convertButton.disabled = false;
+  convertButton.disabled = converting;
 
   status.textContent = "";
 
@@ -142,15 +136,17 @@ function resetFile() {
 
 
 // --------------------------------------------------
-// Conversión OGG / OPUS → MP3
+// Conversión de audio a WAV
 // --------------------------------------------------
 
 convertButton.addEventListener("click", async () => {
 
-  if (!selectedFile) {
+  if (!selectedFile || converting) {
     return;
   }
 
+  const fileToConvert = selectedFile;
+  converting = true;
   convertButton.disabled = true;
   convertButton.textContent = "Convirtiendo...";
 
@@ -160,8 +156,8 @@ convertButton.addEventListener("click", async () => {
 
   formData.append(
     "audio",
-    selectedFile,
-    selectedFile.name
+    fileToConvert,
+    fileToConvert.name
   );
 
   try {
@@ -194,21 +190,27 @@ convertButton.addEventListener("click", async () => {
       throw new Error(message);
     }
 
-    const mp3Blob = await response.blob();
+    const contentType = response.headers.get("Content-Type") || "";
+
+    if (!/^audio\/(?:wav|x-wav|wave|vnd\.wave)(?:;|$)/i.test(contentType)) {
+      throw new Error("El servidor no devolvió un archivo WAV.");
+    }
+
+    const wavBlob = await response.blob();
 
     const downloadUrl =
-      URL.createObjectURL(mp3Blob);
+      URL.createObjectURL(wavBlob);
 
     const downloadLink =
       document.createElement("a");
 
     const originalName =
-      selectedFile.name.replace(/\.(ogg|opus|wav)$/i, "");
+      fileToConvert.name.replace(/\.[^.]+$/, "") || "audio";
 
     downloadLink.href = downloadUrl;
 
     downloadLink.download =
-      `${originalName}.mp3`;
+      `${originalName}.wav`;
 
     document.body.appendChild(downloadLink);
 
@@ -230,8 +232,10 @@ convertButton.addEventListener("click", async () => {
 
   } finally {
 
+    converting = false;
+
     convertButton.textContent =
-      "Convertir a MP3";
+      "Convertir a WAV";
 
     convertButton.disabled =
       selectedFile === null;

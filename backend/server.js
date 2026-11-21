@@ -3,11 +3,12 @@ const cors = require("cors");
 const multer = require("multer");
 
 const { execFile } = require("child_process");
+const { randomUUID } = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
 const app = express();
-const PORT = 3020;
+const PORT = 3040;
 
 
 // --------------------------------------------------
@@ -37,7 +38,9 @@ app.use(express.static(FRONTEND_DIR));
 // --------------------------------------------------
 // Multer
 // --------------------------------------------------
-const allowedExtensions = new Set([".ogg", ".opus", ".wav"]);
+const allowedExtensions = new Set([
+  ".mp3", ".ogg", ".opus", ".wav", ".flac", ".m4a", ".aac", ".aiff", ".wma"
+]);
 
 const storage = multer.diskStorage({
 
@@ -47,18 +50,8 @@ const storage = multer.diskStorage({
 
   filename: (req, file, cb) => {
 
-    const originalExtension =
-      path.extname(file.originalname).toLowerCase();
-
-    const extension =
-      originalExtension === ".opus"
-        ? ".opus"
-        : ".ogg";
-
-    const uniqueName =
-      `${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`;
-
-    cb(null, uniqueName);
+    const extension = path.extname(file.originalname).toLowerCase();
+    cb(null, randomUUID() + extension);
   }
 
 });
@@ -76,7 +69,7 @@ const upload = multer({
   const extension = path.extname(file.originalname).toLowerCase();
 
   if (!allowedExtensions.has(extension)) {
-    return cb(new Error("Solo se permiten archivos .ogg, .opus o .wav"));
+    return cb(new Error("Formato admitido: MP3, OGG, OPUS, WAV, FLAC, M4A, AAC, AIFF o WMA."));
   }
 
   cb(null, true);
@@ -93,14 +86,14 @@ app.get("/health", (req, res) => {
 
   res.json({
     status: "ok",
-    service: "OGG / OPUS to MP3 Converter"
+    service: "Baby-Beep · Conversor a WAV"
   });
 
 });
 
 
 // --------------------------------------------------
-// Conversión OGG / OPUS → MP3
+// Conversión de audio a WAV para YAMNet
 // --------------------------------------------------
 
 app.post("/convert", upload.single("audio"), (req, res) => {
@@ -122,22 +115,24 @@ app.post("/convert", upload.single("audio"), (req, res) => {
     .replace(/[^a-zA-Z0-9-_ ]/g, "")
     .trim() || "audio";
 
-  const outputName = `${safeName}.mp3`;
+  const outputName = `${safeName}.wav`;
 
   const outputPath = path.join(
     OUTPUT_DIR,
-    `${Date.now()}-${outputName}`
+    `${req.file.filename}.wav`
   );
 
   const ffmpegArgs = [
-    "-y",
-    "-i",
-    inputPath,
-    "-vn",
-    "-codec:a",
-    "libmp3lame",
-    "-q:a",
-    "2",
+    "-nostdin",
+    "-loglevel", "error",
+    "-protocol_whitelist", "file",
+    "-format_whitelist", "mp3,ogg,wav,flac,mov,m4a,mp4,3gp,3g2,mj2,aac,aiff,asf",
+    "-i", inputPath,
+    "-map", "0:a:0",
+    "-ac", "1",
+    "-ar", "16000",
+    "-c:a", "pcm_s16le",
+    "-f", "wav",
     outputPath
   ];
 
@@ -156,6 +151,8 @@ app.post("/convert", upload.single("audio"), (req, res) => {
       });
 
     }
+
+    res.type("audio/wav");
 
     res.download(
       outputPath,
@@ -203,7 +200,7 @@ app.use((error, req, res, next) => {
 app.listen(PORT, () => {
 
   console.log(
-    `OGG / OPUS → MP3 backend activo en http://localhost:${PORT}`
+    `Conversor a WAV activo en http://localhost:${PORT}`
   );
 
 });

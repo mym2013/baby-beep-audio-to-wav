@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>OGG / OPUS / WAV → MP3</title>
+  <title>Convertir audio a WAV</title>
 
   <link rel="stylesheet" href="style.css">
 </head>
@@ -21,10 +21,10 @@
           ⇄
         </div>
 
-        <h1>OGG / OPUS / WAV → MP3</h1>
+        <h1>Convertir audio a WAV</h1>
 
         <p>
-          Convierte tus archivos de audio de forma rápida y sencilla.
+          Prepara audios para YAMNet en WAV PCM de 16 bits, mono y a 16 kHz.
         </p>
 
       </div>
@@ -34,20 +34,20 @@
         class="drop-zone"
         tabindex="0"
         role="button"
-        aria-label="Seleccionar archivo OGG, OPUS o WAV"
+        aria-label="Seleccionar archivo de audio"
       >
 
         <input
           type="file"
           id="fileInput"
-          accept=".ogg,.opus,.wav,audio/ogg,audio/opus,audio/wav"
+          accept="audio/*,.mp3,.ogg,.opus,.wav,.flac,.m4a,.aac,.aiff,.wma"
           hidden
         >
 
         <div class="upload-icon">↑</div>
 
         <p class="drop-title">
-          Arrastra tu archivo .ogg, .opus o .wav aquí
+          Arrastra tu archivo de audio aquí
         </p>
 
         <p class="drop-separator">
@@ -94,7 +94,7 @@
         type="button"
         disabled
       >
-        Convertir a MP3
+        Convertir a WAV
       </button>
 
       <p id="status" class="status"></p>
@@ -102,7 +102,7 @@
     </section>
 
     <p class="footer">
-      OGG / OPUS / WAV → MP3 Converter
+      Baby-Beep · Conversor de audio
     </p>
 
   </main>
